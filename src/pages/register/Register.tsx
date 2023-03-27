@@ -24,8 +24,10 @@ const style = {
   p: 4,
 };
 
-export default function Register() {
-  const [createUser, { loading, error }] = useMutation(CREATE_USER);
+export default function Register(props: any) {
+  const { refetch } = props;
+
+  const [createUser, { data, loading, error }] = useMutation(CREATE_USER);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -44,12 +46,14 @@ export default function Register() {
     });
     setName("");
     setPassword("");
+    await refetch();
   };
 
   const [open, setOpen] = useState(false);
   const handleClose = () => {
     setOpen(false);
   };
+
   return (
     <Stack alignItems={"center"} justifyContent={"space-around"}>
       <Stack padding={"20px"} />

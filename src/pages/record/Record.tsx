@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -20,7 +19,7 @@ import { ChangeEvent, useState } from "react";
 import { GET_GYM_GRADE, GET_POWER_RANK } from "../../graphql/query";
 import { CREATE_RECORD } from "../../graphql/mutation";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { error } from "console";
+import { PowerRank, Problem } from "../../types/types";
 
 const style = {
   position: "absolute" as "absolute",
@@ -34,14 +33,14 @@ const style = {
   p: 4,
 };
 
-export default function Record() {
+export default function Record(props: any) {
+  const { rankRefetch } = props;
+
   const [name, setName] = useState("");
   const [gymName, setGymName] = useState("");
   const [grade, setGrade] = useState("");
   const [count, setCount] = useState(0);
-  const [problems, setProblems] = useState(
-    [] as { grade: string; count: number }[]
-  );
+  const [problems, setProblems] = useState([] as Problem[]);
 
   const [createRecord, { loading, error }] = useMutation(CREATE_RECORD);
 
@@ -51,7 +50,7 @@ export default function Record() {
   });
   const userData = userQuery.data;
   const userLoading = userQuery.loading;
-  let gymGrade: [string, string][] = [];
+  const gymGrade: [string, string][] = [];
 
   const handleNameChange = (event: SelectChangeEvent) => {
     setName(event.target.value as string);
@@ -68,7 +67,6 @@ export default function Record() {
   };
   const addProblems = () => {
     const problem = { grade, count };
-    console.log(problem);
     setProblems([problem, ...problems]);
     setGrade("");
     setCount(0);
@@ -96,6 +94,9 @@ export default function Record() {
         },
       },
     });
+
+    await rankRefetch();
+
     setName("");
     setGymName("");
     setGrade("");
@@ -105,23 +106,22 @@ export default function Record() {
   if (userLoading) {
     return <Stack>Loading...</Stack>;
   } else {
-    const users = userData.getPowerRank.map(
-      (d: { name: string; power: number }) => {
-        return d.name;
-      }
-    );
+    const users = userData.getPowerRank.map((d: PowerRank) => {
+      return d.name;
+    });
 
+    let colors: { [x: string]: any };
     if (data) {
-      for (let gg in data.getGymGrade) {
-        gymGrade.push([gg, data.getGymGrade[gg]]);
+      for (const gg in data.getGymGrade) {
+        if (gg !== "__typename") gymGrade.push([gg, data.getGymGrade[gg]]);
       }
-      gymGrade = gymGrade.slice(1);
+      colors = Object.fromEntries(gymGrade);
     }
 
     return (
       <Stack alignItems={"center"}>
         <Stack direction={"row"}>
-          <FormControl sx={{ width: 200, margin: 5 }}>
+          <FormControl sx={{ width: "150px", margin: "10px" }}>
             <InputLabel id="demo-simple-select-label">이름</InputLabel>
             <Select
               labelId="demo-simple-select-label"
@@ -140,7 +140,7 @@ export default function Record() {
             </Select>
           </FormControl>
 
-          <FormControl sx={{ width: 200, margin: 5 }}>
+          <FormControl sx={{ width: "150px", margin: "10px" }}>
             <InputLabel id="demo-simple-select-label">암장</InputLabel>
             <Select
               labelId="demo-simple-select-label"
@@ -200,34 +200,36 @@ export default function Record() {
           </Button>
         </Stack>
 
-        {problems.map(
-          (problem: { grade: string; count: number }, idx: number) => {
-            return (
-              <Stack
-                direction={"row"}
-                alignItems={"center"}
-                justifyContent={"space-between"}
-                border={"solid 0.5px blue"}
-                margin={"5px"}
-                padding={"5px"}
-                width={"200px"}
-                key={idx}
+        {problems.map((problem: Problem, idx: number) => {
+          return (
+            <Stack
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"space-between"}
+              border={"solid 0.5px blue"}
+              margin={"5px"}
+              padding={"5px"}
+              width={"200px"}
+              key={idx}
+            >
+              <Stack>{`"${colors[problem.grade]}" ${problem.count}개`}</Stack>
+              <IconButton
+                aria-label="delete"
+                size="small"
+                onClick={handleDeleteButton}
+                id={idx.toString()}
               >
-                <Stack>{`"${problem.grade}" ${problem.count}개`}</Stack>
-                <IconButton
-                  aria-label="delete"
-                  size="small"
-                  onClick={handleDeleteButton}
-                  id={idx.toString()}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            );
-          }
-        )}
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+          );
+        })}
 
-        <Button variant="contained" sx={{ width: 100 }} onClick={handleSubmit}>
+        <Button
+          variant="contained"
+          sx={{ width: 100, margin: "10px" }}
+          onClick={handleSubmit}
+        >
           등록
         </Button>
         <Backdrop
